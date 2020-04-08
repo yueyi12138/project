@@ -47,6 +47,7 @@ public:
 
 	//把一个整数数据换成对应的16进制字符串
 	std::string changeHex(uint32 n);
+
 	std::string getStringMD5(const std::string& str);
 	std::string getFileMD5(const char* filePath);
 	

@@ -1,18 +1,19 @@
-#define  _CRT_SECURE_NO_WARNINGS
 #include<math.h>
 #include<iostream>
+#include<fstream>
 #include "md5.h"
+
 //初始化static成员
 int MD5::_leftShift[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 
-12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9,14, 20, 5, 9, 
-14, 20, 5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 
-16, 23, 4, 11, 16, 23, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10,
-15, 21, 6, 10, 15, 21};
+12, 17, 22, 7, 12, 17, 22, 5, 9, 14, 20, 5, 9,14, 20, 5, 9, 14, 20, 
+5, 9, 14, 20, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 6, 10,
+15, 21, 6, 10, 15, 21, 6, 10,15, 21, 6, 10, 15, 21};
 
 MD5::MD5()
 {
 	init();
 }
+
 void MD5::init()
 {
 	//初始化k[i]
@@ -20,31 +21,37 @@ void MD5::init()
 	{
 		_k[i] = static_cast<uint32>(abs(sin(i + 1.0))*pow(2.0, 32));
 	}
+
+	reset();
 }
 
 void MD5::reset()
 {
+
 	_a = 0x67452301; 
 	_b = 0xefcdab89; 
 	_c = 0x98badcfe; 
 	_d = 0x10325476;
 	//初始化chunk
 	memset(_chunk, 0, CHUNK_BYTE);
+	
 	_lastByte = _totalByte = 0;
-
 
 }
 
+//一个chunk的MD5运算
 void MD5::calMD5(uint32* chunk)
 {
+	int a = _a, b = _b, c = _c, d=_d ;
+	int f, g;
+	//4byte为一个处理单元
+	//共执行64次操作
+
 	//if (0 <= i < 16) g = i; 
 	//if (16 <= i < 32) g = (5 * i + 1) % 16;
 	//if (32 <= i < 48) g = (3 * i + 5) % 16; 
 	//if(48 <= i < 63) g = (7 * i) % 16;
-	//4byte为一个处理单元
-	//共执行64次操作
-	int a = _a, b = _b, c = _c, d=_d ;
-	int f, g;
+
 	for (int i = 0; i < 64; i++)
 	{
 		//位运算 F G H I
@@ -67,8 +74,7 @@ void MD5::calMD5(uint32* chunk)
 			g = (3 * i + 5) % 16;
 		}
 		//48~63 I
-		else 
-		{
+		else {
 			f = I(b, c, d);
 			g = (7 * i) % 16;
 		}
@@ -131,19 +137,46 @@ std::string MD5::changeHex(uint32 n)
 		std::string curRet;
 		//除16：高位  模16：低位   字节内不逆序
 		curRet += strMap[curByte / 16];
-		curRet += strMap[curByte %16];
+		curRet += strMap[curByte % 16];
 		//字节之间逆序
-		ret += curRet;
+		ret += curRet;   
 	}
 	return ret;
 }
 
-std::string getStringMD5(const std::string& str)
+std::string MD5::getStringMD5(const std::string& str)
 {
-	return "";
+	if (str.empty())
+	{
+		return changeHex(_a).append(changeHex(_b)).append(changeHex(_c)). append(changeHex(_d));
+	}
+	_totalByte = str.size();
+	uint32 chunkNum = _totalByte / CHUNK_BYTE;
+	const char* strPtr = str.c_str();
+	for (int i = 0; i < chunkNum; ++i)
+	{
+		memcpy(_chunk , strPtr + i* CHUNK_BYTE, CHUNK_BYTE);
+		calMD5((uint32*) _chunk);
+	}
+	//计算最后一块数据    需要填充
+	_lastByte = _totalByte%CHUNK_BYTE;
+	memcpy(_chunk, strPtr + chunkNum*CHUNK_BYTE, _lastByte);
+	calFinalMD5();
+	return changeHex(_a).append(changeHex(_b)).append(changeHex(_c)).append(changeHex(_d));
 }
-
-std::string getFileMD5(const char* filePath)
+std::string MD5::getFileMD5(const char* filePath)
 {
-	return "";
+	std::ifstream fin(filePath);
+	if (fin.is_open())
+	{
+		std::cout << filePath;
+		perror("file open failed");
+		return "";
+	}
+	while (fin.eof())
+	{
+		//1.全部读进来   seekg   tellg 获取文件大小
+		fin.seekg(0, fin.end);
+		uint32 length =fin.tellg
+	}
 }
